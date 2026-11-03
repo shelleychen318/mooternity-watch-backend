@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: moo
+      POSTGRES_PASSWORD: moo
+      POSTGRES_DB: mooternity
+    # Host port 5433 avoids colliding with a local Postgres on 5432.
+    # (Inside the compose network, services still reach it at db:5432.)
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moo -d mooternity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # S3-compatible object store for local dev (snapshot images).
+  # Adobe s3mock is used instead of MinIO because MinIO's images are no longer
+  # publicly pullable without authentication. The design doc names MinIO only as
+  # an example local store; any S3-compatible server satisfies the requirement.
+  # The bucket is created on startup via initialBuckets (no setup container).
+  s3:
+    image: adobe/s3mock:latest
+    environment:
+      # Pre-create the snapshots bucket on startup (Spring property form used by
+      # current s3mock images). s3mock serves plain HTTP on 9090, HTTPS on 9191.
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: moo-snapshots
+    ports:
+      - "9000:9090"
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_started
+    environment:
+      MW_ENVIRONMENT: local
+      MW_DATABASE_URL: postgresql+psycopg://moo:moo@db:5432/mooternity
+      MW_S3_ENDPOINT_URL: http://s3:9090
+      MW_S3_BUCKET: moo-snapshots
+      MW_S3_ACCESS_KEY_ID: minioadmin
+      MW_S3_SECRET_ACCESS_KEY: minioadmin
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
