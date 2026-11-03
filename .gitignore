@@ -42,3 +42,9 @@ htmlcov/
 
 # Logs
 *.log
+# Local scratch / experiments (never committed)
+scratch/
+scratch*.py
+*.local
+*.scratch
+notes.local.md
