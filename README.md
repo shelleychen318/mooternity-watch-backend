@@ -83,9 +83,18 @@ pytest                  # full suite
 pytest tests/models     # just the data-model tests
 ```
 
-Database-backed tests skip automatically when no Postgres is reachable, so the
-suite stays green in CI without a database. To run them for real, bring up the
-compose Postgres first and set `MW_DATABASE_URL` as shown above.
+The test suite uses a **separate database** (`mooternity_test`) so running tests
+never touches your dev/app database — the suite creates and drops its own schema.
+The compose stack creates `mooternity_test` automatically on first startup; point
+the suite at it with `MW_TEST_DATABASE_URL`:
+
+```bash
+export MW_TEST_DATABASE_URL="postgresql+psycopg://moo:moo@localhost:5433/mooternity_test"
+pytest
+```
+
+Database-backed tests skip automatically when the test database is unreachable,
+so the suite stays green in CI without a database.
 
 ## Data model
 

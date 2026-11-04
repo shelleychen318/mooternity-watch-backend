@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import datetime
 
-from sqlalchemy import inspect
+from sqlalchemy import Engine, inspect
 from sqlalchemy.orm import Session
 
-from app.db import engine
 from app.models import Notification, NotificationChannel, NotificationStatus
 from tests.conftest import make_alert, make_user
 
@@ -57,8 +56,8 @@ def test_notification_pending_to_failed(db_session: Session):
     assert fetched.last_error == "provider timeout"
 
 
-def test_polling_index_exists(db_session: Session):
-    insp = inspect(engine)
+def test_polling_index_exists(db_session: Session, test_engine: Engine):
+    insp = inspect(test_engine)
     indexes = insp.get_indexes("notifications")
     match = [ix for ix in indexes if ix["column_names"] == ["status", "next_retry_at"]]
     assert match, (

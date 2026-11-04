@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import inspect
+from sqlalchemy import Engine, inspect
 from sqlalchemy.orm import Session
 
-from app.db import engine
 from tests.conftest import make_device, make_farm, make_user
 
 
-def test_uuid_primary_keys(db_session: Session):
-    insp = inspect(engine)
+def test_uuid_primary_keys(db_session: Session, test_engine: Engine):
+    insp = inspect(test_engine)
     for table in ("farms", "devices", "users"):
         pk = insp.get_pk_constraint(table)
         assert pk["constrained_columns"] == ["id"]

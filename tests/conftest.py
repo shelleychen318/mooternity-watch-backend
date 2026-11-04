@@ -13,27 +13,39 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import pytest
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401  (registers all tables on Base.metadata)
-from app.db import Base, engine
+from app.config import get_settings
+from app.db import Base
 from app.models import Alert, Device, Event, Farm, User
 
 
 @pytest.fixture(scope="session")
-def _schema() -> Iterator[None]:
+def test_engine() -> Engine:
+    """Engine bound to the dedicated test database.
+
+    Isolated from the app's engine so the suite never creates or drops schema
+    in the dev/app database.
+    """
+    return create_engine(str(get_settings().test_database_url), pool_pre_ping=True)
+
+
+@pytest.fixture(scope="session")
+def _schema(test_engine: Engine) -> Iterator[None]:
     try:
-        Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=test_engine)
     except OperationalError:
-        pytest.skip("No database reachable; model tests skipped.")
+        pytest.skip("No test database reachable; model tests skipped.")
     yield
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=test_engine)
 
 
 @pytest.fixture
-def db_session(_schema: None) -> Iterator[Session]:
-    connection = engine.connect()
+def db_session(test_engine: Engine, _schema: None) -> Iterator[Session]:
+    connection = test_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection, expire_on_commit=False)
     try:
