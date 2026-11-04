@@ -1,4 +1,4 @@
-"""Tests for configuration loading and fail-fast validation (M0-T3)."""
+"""Tests for configuration loading and fail-fast validation."""
 
 import pytest
 from pydantic import ValidationError

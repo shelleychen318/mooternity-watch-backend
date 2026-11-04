@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     database_url: PostgresDsn = Field(
         default="postgresql+psycopg://moo:moo@localhost:5432/mooternity",
     )
+    # Separate database used by the test suite, so running tests never touches
+    # the dev/app database (the suite creates and drops its own schema).
+    test_database_url: PostgresDsn = Field(
+        default="postgresql+psycopg://moo:moo@localhost:5432/mooternity_test",
+    )
 
     # --- Object storage (S3 / MinIO) ---------------------------------------
     s3_endpoint_url: str | None = Field(

@@ -1,4 +1,4 @@
-"""Database connectivity test (M0-T4).
+"""Database connectivity test.
 
 Skips automatically when no database is reachable (e.g. CI without a Postgres
 service), so the suite stays green in environments without the compose stack.
