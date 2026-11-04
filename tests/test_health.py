@@ -1,4 +1,4 @@
-"""Smoke tests for app import and the /health endpoint (M0-T1)."""
+"""Smoke tests for app import and the /health endpoint."""
 
 from fastapi.testclient import TestClient
 
