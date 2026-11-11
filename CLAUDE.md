@@ -125,6 +125,9 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 - PRs target `main`. Style (see PRs #1, #2): sentence-case title; sections
   **Summary / What's added / Notable design points / Testing / How to verify**.
   Keep prose focused on behavior; no milestone IDs in the PR body.
+- Write PR body paragraphs and bullets as **single unwrapped lines** — don't
+  hard-wrap mid-sentence. GitHub soft-wraps to the full width; hard wrapping
+  renders cramped/early-indented. (Code fences keep their own line breaks.)
 - After pushing, watch CI: `gh pr checks <n> --watch`. On failure, pull logs
   with `gh run view <run-id> --log-failed` and fix the root cause.
 
