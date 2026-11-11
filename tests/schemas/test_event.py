@@ -1,5 +1,4 @@
-"""Tests for the event payload contract.
-"""
+"""Tests for the event payload contract."""
 
 from __future__ import annotations
 

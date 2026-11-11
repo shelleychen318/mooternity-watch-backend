@@ -1,5 +1,4 @@
-"""Tests for the schema versioning strategy.
-"""
+"""Tests for the schema versioning strategy."""
 
 from __future__ import annotations
 

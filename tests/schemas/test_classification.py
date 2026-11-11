@@ -1,5 +1,4 @@
-"""Tests for event-type classification.
-"""
+"""Tests for event-type classification."""
 
 from __future__ import annotations
 
