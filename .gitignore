@@ -42,9 +42,8 @@ htmlcov/
 
 # Logs
 *.log
-# Local scratch / experiments (never committed)
+# Local-only, never committed
+#   scratch/    local workspace; everything inside is ignored (plain names, no suffix needed)
+#   *.local.*   opt any file out of commits elsewhere in the tree (e.g. docs/logbook.local.md)
 scratch/
-scratch*.py
-*.local
-*.scratch
-notes.local.md
+*.local.*
