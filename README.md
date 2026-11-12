@@ -141,7 +141,3 @@ schema drift).
 All settings are environment-driven with the `MW_` prefix (see
 [`.env.example`](.env.example) and `app/config.py`). Secrets have no safe
 default and fail fast when missing in non-local environments.
-
-## Documentation
-
-- [`docs/tasks.md`](docs/tasks.md) — granular implementation tasks, milestones, dependencies, and open questions.

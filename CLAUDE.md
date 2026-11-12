@@ -13,9 +13,9 @@ REST + SSE API to the frontend.
 **Stack:** Python 3.11+ · FastAPI · PostgreSQL (SQLAlchemy 2.0 + Alembic) ·
 S3/MinIO · SSE · Twilio (SMS) · FCM (push) · Docker.
 
-**Work is milestone-driven.** [`docs/tasks.md`](docs/tasks.md) is the source of
-truth for tasks, dependencies, acceptance criteria (ACs), and open questions.
-Pick up work by milestone/task ID (e.g. `M2-T1`).
+**Work is milestone-driven.** Tasks carry stable milestone/task IDs
+(e.g. `M2-T1`) with dependencies, acceptance criteria (ACs), and open
+questions. Pick up and reference work by that ID.
 
 ## Layout
 
@@ -28,8 +28,7 @@ app/
   schemas/           Pydantic wire contracts (validation) — separate from models/
 alembic/versions/    migrations
 tests/               mirrors app/ (tests/models/, tests/schemas/, ...)
-docs/tasks.md        milestones, tasks, ACs, open questions
-scratch/             local-only notes; gitignored (*.local.md), never committed
+scratch/             local-only notes; gitignored, never committed
 ```
 
 ## Commands
@@ -149,8 +148,8 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 
 ## When adding a feature
 
-1. Read the task + ACs in `docs/tasks.md`; note its dependencies and any open
-   questions it touches.
+1. Read the task + ACs for the milestone/task ID you're implementing; note its
+   dependencies and any open questions it touches.
 2. Read the neighboring code first; match existing patterns (enums, mixins,
    module-per-table, contract/persistence split).
 3. Implement in the right layer; add focused tests per AC.
@@ -159,3 +158,25 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 5. Branch, commit specific paths, push, open a PR targeting `main`, and confirm
    CI is green.
 ```
+
+## PR format
+
+Branch off `main`; name branches `<type>/<short-slug>` (e.g. `feat/m2-event-payload-contract`, `chore/move-tasks-to-local-scratch`).
+
+**Title:** `<type>: <description>` (Conventional Commits). Lowercase description, no trailing period, optional parenthetical scope clarifier.
+
+- `feat:` new capability · `fix:` bug fix · `docs:` docs only · `chore:` tooling/housekeeping · `refactor:` · `test:` · `ci:`
+- Example: `feat: event payload contract (versioned schema, validation + classification)`
+
+**Body:** Markdown sections, in this order, including only the ones that apply:
+
+1. `## Summary` — always. 2–4 sentences: what it adds/changes and where it sits in the pipeline.
+2. `## What's added` / `## What's changed` — table when introducing multiple modules/entities, else bullets.
+3. `## Notable design points` — when there are non-obvious decisions. Bullets with a **bold lead-in** per point.
+4. `## Migrations` — when models/schema change; note `alembic check` drift status.
+5. `## Testing` — when code changes; what's covered, where tests live, DB-required or not.
+6. `## How to verify` — when the reviewer can run something; a fenced command block.
+7. `## Verification Results` — when there's output/screenshots.
+8. `## Notes` — caveats, scope limits, "docs-only, no CI impact."
+
+Keep docs/config-only PRs lean: Summary + What's changed + Notes is usually enough.
