@@ -1,4 +1,4 @@
-"""Database engine, session management, and the ORM declarative base (M0-T4).
+"""Database engine, session management, and the ORM declarative base.
 
 Exposes:
 - ``engine`` / ``SessionLocal`` for SQLAlchemy access.

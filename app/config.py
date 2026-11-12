@@ -1,4 +1,4 @@
-"""Centralized, environment-driven configuration (M0-T3).
+"""Centralized, environment-driven configuration.
 
 Settings load from environment variables (and an optional ``.env`` file for local
 dev). Values have sane local defaults where it is safe to do so; genuine secrets

@@ -13,9 +13,8 @@ REST + SSE API to the frontend.
 **Stack:** Python 3.11+ · FastAPI · PostgreSQL (SQLAlchemy 2.0 + Alembic) ·
 S3/MinIO · SSE · Twilio (SMS) · FCM (push) · Docker.
 
-**Work is milestone-driven.** Tasks carry stable milestone/task IDs
-(e.g. `M2-T1`) with dependencies, acceptance criteria (ACs), and open
-questions. Pick up and reference work by that ID.
+**Work is tracked against the design doc**, with dependencies, acceptance
+criteria (ACs), and open questions.
 
 ## Layout
 
@@ -117,13 +116,12 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 
 - Branch off the latest `main`: `git checkout main && git pull && git checkout
   -b feature/<slug>`. Never commit straight to `main`.
-- Commit messages: `Milestone N: <topic>` for milestone work, imperative mood
-  otherwise; short bullet body summarizing the change.
+- Commit messages: imperative mood; short bullet body summarizing the change.
 - Stage specific paths (e.g. `git add app/schemas tests/schemas`) — not
   `git add .` — so gitignored `scratch/` and stray files stay out.
 - PRs target `main`. Style (see PRs #1, #2): sentence-case title; sections
   **Summary / What's added / Notable design points / Testing / How to verify**.
-  Keep prose focused on behavior; no milestone IDs in the PR body.
+  Keep prose focused on behavior.
 - Write PR body paragraphs and bullets as **single unwrapped lines** — don't
   hard-wrap mid-sentence. GitHub soft-wraps to the full width; hard wrapping
   renders cramped/early-indented. (Code fences keep their own line breaks.)
@@ -148,8 +146,8 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 
 ## When adding a feature
 
-1. Read the task + ACs for the milestone/task ID you're implementing; note its
-   dependencies and any open questions it touches.
+1. Read the relevant design doc section + ACs for what you're implementing;
+   note its dependencies and any open questions it touches.
 2. Read the neighboring code first; match existing patterns (enums, mixins,
    module-per-table, contract/persistence split).
 3. Implement in the right layer; add focused tests per AC.
@@ -161,7 +159,7 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 
 ## PR format
 
-Branch off `main`; name branches `<type>/<short-slug>` (e.g. `feat/m2-event-payload-contract`, `chore/move-tasks-to-local-scratch`).
+Branch off `main`; name branches `<type>/<short-slug>` (e.g. `feat/event-payload-contract`, `chore/move-notes-to-local-scratch`).
 
 **Title:** `<type>: <description>` (Conventional Commits). Lowercase description, no trailing period, optional parenthetical scope clarifier.
 

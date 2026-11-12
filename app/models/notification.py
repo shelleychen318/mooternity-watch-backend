@@ -79,6 +79,6 @@ class Notification(UUIDPrimaryKey, TimestampMixin, Base):
     )
 
     __table_args__ = (
-        # Supports the worker's "find due pending rows" poll (M6-T4).
+        # Supports the worker's "find due pending rows" poll.
         Index("ix_notifications_status_next_retry_at", "status", "next_retry_at"),
     )

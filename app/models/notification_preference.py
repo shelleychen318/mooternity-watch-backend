@@ -1,4 +1,4 @@
-"""NotificationPreference model (M1-T5).
+"""NotificationPreference model.
 
 A user's per-channel notification settings plus optional quiet hours. The FK to
 ``users`` carries a **unique constraint**, enforcing a one-to-one relationship:

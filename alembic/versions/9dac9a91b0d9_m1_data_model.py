@@ -1,4 +1,4 @@
-"""m1 data model
+"""data model
 
 Revision ID: 9dac9a91b0d9
 Revises: 84afc9b98b7b
