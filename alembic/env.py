@@ -1,4 +1,4 @@
-"""Alembic migration environment (M0-T4).
+"""Alembic migration environment.
 
 Pulls the database URL from the application settings and uses the app's
 declarative ``Base.metadata`` as the autogenerate target.
