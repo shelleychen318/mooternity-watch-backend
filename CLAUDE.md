@@ -114,17 +114,19 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 
 ## Git & PR workflow
 
-- Branch off the latest `main`: `git checkout main && git pull && git checkout
-  -b feature/<slug>`. Never commit straight to `main`.
-- Commit messages: imperative mood; short bullet body summarizing the change.
+Conventions (the step-by-step is handled by the `open-pr` skill):
+- Branch off the latest `main`; never commit straight to `main`.
+- Commit messages: imperative mood, short body. **No internal task/milestone IDs
+  in commit messages or PRs** — commits are public and those IDs mean nothing to
+  outside readers.
 - Stage specific paths (e.g. `git add app/schemas tests/schemas`) — not
   `git add .` — so gitignored `scratch/` and stray files stay out.
-- PRs target `main`. Style (see PRs #1, #2): sentence-case title; sections
-  **Summary / What's added / Notable design points / Testing / How to verify**.
-  Keep prose focused on behavior.
-- Write PR body paragraphs and bullets as **single unwrapped lines** — don't
-  hard-wrap mid-sentence. GitHub soft-wraps to the full width; hard wrapping
-  renders cramped/early-indented. (Code fences keep their own line breaks.)
+- PRs target `main`. Style (see existing PRs): sentence-case title; sections
+  **Summary / What's added / Notable design points / Testing / How to verify**;
+  prose focused on behavior.
+- Write PR body paragraphs and bullets as **single unwrapped lines** — GitHub
+  soft-wraps to full width; hard wrapping renders cramped. (Code fences keep
+  their own line breaks.)
 - After pushing, watch CI: `gh pr checks <n> --watch`. On failure, pull logs
   with `gh run view <run-id> --log-failed` and fix the root cause.
 
