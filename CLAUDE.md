@@ -74,6 +74,17 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 - Type-hint everything; modern syntax (`X | None`, `list[...]`).
 - Ruff is the single linter/formatter (line length 100; rules `E,F,I,UP,B`).
   Let it fix/format; don't hand-format.
+- **No internal planning references in code.** Docstrings and comments must not
+  cite milestone/task IDs (e.g. `M3-T1`, `Task 4`), planning docs (e.g.
+  `scratch/*-plan.md`), testing-tier names, or future/not-yet-built work. These
+  mean nothing to a reader of the code. Describe what the code does and why,
+  using durable domain terms — not where it sits in the plan or what comes next.
+- **Docstrings describe behavior, not the code's qualities.** State what a
+  module/function does and why; skip self-praise or meta-commentary about the
+  implementation (e.g. "backend-agnostic", "no store-specific branches",
+  "exercises the same code paths"). Keep them short; a one-line summary is often
+  enough. A comment should explain a non-obvious *why*, not narrate the lines
+  below it.
 
 ### Config
 - All settings are env-driven with the **`MW_`** prefix, defined in

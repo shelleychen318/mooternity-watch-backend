@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     )
     s3_region: str = "us-east-1"
     s3_bucket: str = "moo-snapshots"
+    # Key prefix all snapshot objects live under. References outside the
+    # configured bucket + this prefix are rejected (the trust boundary for
+    # edge-uploaded snapshot URLs). Empty string allows the whole bucket.
+    s3_snapshot_prefix: str = "snapshots/"
     s3_access_key_id: str | None = Field(default="minioadmin")
     s3_secret_access_key: str | None = Field(default="minioadmin")
     signed_url_ttl_seconds: int = Field(default=300, ge=1)
