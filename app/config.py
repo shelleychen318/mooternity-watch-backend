@@ -96,10 +96,16 @@ class Settings(BaseSettings):
         missing: list[str] = []
         if self.auth_secret == "dev-insecure-change-me":
             missing.append("MW_AUTH_SECRET (must be set to a real secret)")
-        if not self.s3_access_key_id:
-            missing.append("MW_S3_ACCESS_KEY_ID")
-        if not self.s3_secret_access_key:
-            missing.append("MW_S3_SECRET_ACCESS_KEY")
+        # S3 access keys are only required when talking to a custom S3-compatible
+        # endpoint (e.g. a self-hosted store), which needs explicit credentials.
+        # Against real AWS S3 (no endpoint override) the backend authenticates via
+        # its attached task role (ECS Fargate), so static keys must NOT be set --
+        # requiring them here would break a correct key-less prod deploy.
+        if self.s3_endpoint_url:
+            if not self.s3_access_key_id:
+                missing.append("MW_S3_ACCESS_KEY_ID")
+            if not self.s3_secret_access_key:
+                missing.append("MW_S3_SECRET_ACCESS_KEY")
 
         if missing:
             raise ValueError(

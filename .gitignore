@@ -47,3 +47,6 @@ htmlcov/
 #   *.local.*   opt any file out of commits elsewhere in the tree (e.g. docs/logbook.local.md)
 scratch/
 *.local.*
+
+# AWS "new experience" agent rules — local tooling, not project source.
+.kiro/steering/aws-starter-rules.md
