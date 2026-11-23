@@ -11,8 +11,9 @@ name: S3 real tier
 on:
   workflow_dispatch: {}
   schedule:
-    # Nightly at 08:00 UTC.
-    - cron: "0 8 * * *"
+    # Weekly, Mondays at 08:00 UTC. Catches external drift (AWS/boto3/IAM changes)
+    # between releases; a solo capstone doesn't need a nightly cadence.
+    - cron: "0 8 * * 1"
 
 # Least privilege: id-token to fetch the OIDC token, read to checkout.
 permissions:
