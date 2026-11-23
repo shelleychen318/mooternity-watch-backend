@@ -54,7 +54,7 @@ class Settings(BaseSettings):
         default="http://localhost:9000",
         description="Override for S3-compatible stores (local dev); None for real AWS S3.",
     )
-    s3_region: str = "us-east-1"
+    s3_region: str = "us-east-2"
     s3_bucket: str = "moo-snapshots"
     # Key prefix all snapshot objects live under. References outside the
     # configured bucket + this prefix are rejected (the trust boundary for

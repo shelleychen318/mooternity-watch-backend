@@ -33,6 +33,17 @@ else:
 
 logger = logging.getLogger(__name__)
 
+
+class PurgeError(RuntimeError):
+    """An object deletion failed, so the purge was aborted before deleting rows.
+
+    S3 ``delete_objects`` returns HTTP 200 even when individual keys fail, listing
+    them under ``Errors``. We raise on any such failure so DB rows are never
+    deleted while their snapshot objects remain — which would strand the objects
+    (no row left to find them by).
+    """
+
+
 # S3 delete_objects accepts at most 1000 keys per request.
 _DELETE_BATCH_SIZE = 1000
 
@@ -140,12 +151,24 @@ def purge(
 
     client = client or get_s3_client()
 
-    # Delete objects first so a failure here never orphans a reference.
+    # Delete objects first so a failure here never orphans a reference. S3
+    # delete_objects reports per-key failures in the response (not as an
+    # exception), so inspect Errors and abort before touching any rows.
     for chunk in _batched(keys, _DELETE_BATCH_SIZE):
-        client.delete_objects(
+        response = client.delete_objects(
             Bucket=settings.s3_bucket,
             Delete={"Objects": [{"Key": key} for key in chunk]},
         )
+        errors = response.get("Errors")
+        if errors:
+            failed = ", ".join(
+                f"{e.get('Key')!r} ({e.get('Code')}: {e.get('Message')})" for e in errors
+            )
+            raise PurgeError(
+                f"Aborting purge: {len(errors)} snapshot object(s) failed to delete "
+                f"from bucket {settings.s3_bucket!r}; no event rows were deleted. "
+                f"Failures: {failed}"
+            )
 
     # Then delete rows.
     for event in stale:
