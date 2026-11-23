@@ -47,12 +47,11 @@ def test_presigned_url_expires(s3_real: S3RealHarness) -> None:
     )
     assert signed.ttl_seconds == _SIGNED_URL_TTL
 
-    # Before expiry: the object is served.
     before = requests.get(signed.url, timeout=10)
     assert before.status_code == 200
     assert before.content == b"snapshot-bytes"
 
-    # After expiry: real S3 rejects the now-stale signature with 403.
+    # Real S3 rejects the stale signature with 403; the mock does not.
     time.sleep(_SIGNED_URL_TTL + _EXPIRY_BUFFER)
     after = requests.get(signed.url, timeout=10)
     assert after.status_code == 403
@@ -69,7 +68,6 @@ def test_delete_takes_effect_on_real_s3(s3_real: S3RealHarness) -> None:
     key = "snapshots/to-delete.jpg"
     s3_real.put(key, b"snapshot-bytes")
 
-    # Precondition: it is really there.
     head = s3_real.client.head_object(Bucket=s3_real.bucket, Key=key)
     assert head["ContentLength"] == len(b"snapshot-bytes")
 
@@ -78,11 +76,10 @@ def test_delete_takes_effect_on_real_s3(s3_real: S3RealHarness) -> None:
         Delete={"Objects": [{"Key": key}]},
     )
 
-    # The object is gone: head_object now raises a 404-class ClientError.
+    # head_object on a deleted key raises a 404-class ClientError.
     with pytest.raises(s3_real.client.exceptions.ClientError) as exc_info:
         s3_real.client.head_object(Bucket=s3_real.bucket, Key=key)
     assert exc_info.value.response["Error"]["Code"] in ("404", "NoSuchKey", "NotFound")
 
-    # And the bucket shows no objects under the prefix.
     listing = s3_real.client.list_objects_v2(Bucket=s3_real.bucket, Prefix=key)
     assert listing.get("KeyCount", 0) == 0

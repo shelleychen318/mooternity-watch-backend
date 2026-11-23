@@ -150,8 +150,6 @@ def s3_real() -> Iterator[S3RealHarness]:
     region = os.environ.get("MW_S3_REGION", "us-east-2")
     bucket = f"{REAL_TEST_BUCKET_PREFIX}{uuid.uuid4().hex[:12]}"
 
-    # Real AWS: no endpoint override, and leave creds unset so botocore's
-    # provider chain (OIDC role / local profile) supplies them.
     settings = Settings(
         environment=Environment.TEST,
         s3_endpoint_url=None,
@@ -189,6 +187,6 @@ def s3_real() -> Iterator[S3RealHarness]:
         )
     finally:
         _empty_and_delete_bucket(client, bucket)
-        # Teardown must leave nothing behind: confirm the bucket is really gone.
+        # Assert teardown left nothing behind.
         with pytest.raises(client.exceptions.ClientError):
             client.head_bucket(Bucket=bucket)

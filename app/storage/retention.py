@@ -151,9 +151,8 @@ def purge(
 
     client = client or get_s3_client()
 
-    # Delete objects first so a failure here never orphans a reference. S3
-    # delete_objects reports per-key failures in the response (not as an
-    # exception), so inspect Errors and abort before touching any rows.
+    # Delete objects before rows. delete_objects reports per-key failures in the
+    # response rather than raising, so check Errors and abort before any row.
     for chunk in _batched(keys, _DELETE_BATCH_SIZE):
         response = client.delete_objects(
             Bucket=settings.s3_bucket,

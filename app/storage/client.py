@@ -41,13 +41,10 @@ def build_s3_client(settings: Settings) -> S3Client:
         client_kwargs["endpoint_url"] = settings.s3_endpoint_url
         client_kwargs["config"] = Config(s3={"addressing_style": "path"})
     else:
-        # Real AWS S3: pin the regional endpoint. Without this, botocore can
-        # resolve the legacy global host (s3.amazonaws.com) for the generated
-        # presigned URL while signing against the regional host
-        # (s3.<region>.amazonaws.com). The host is part of the SigV4 signature,
-        # so the mismatch yields SignatureDoesNotMatch / HTTP 403 on fetch for
-        # any bucket outside us-east-1. Forcing the regional endpoint keeps the
-        # signed host and the URL host identical.
+        # Real AWS S3: pin the regional endpoint so presigned URLs sign and
+        # address the same host. Otherwise botocore may sign the regional host
+        # but build a global-host (s3.amazonaws.com) URL, yielding
+        # SignatureDoesNotMatch / 403 on fetch for buckets outside us-east-1.
         client_kwargs["endpoint_url"] = f"https://s3.{settings.s3_region}.amazonaws.com"
 
     return boto3.client("s3", **client_kwargs)
