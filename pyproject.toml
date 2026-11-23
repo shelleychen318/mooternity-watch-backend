@@ -11,6 +11,7 @@ dependencies = [
     "sqlalchemy>=2.0,<3.0",
     "alembic>=1.13,<2.0",
     "psycopg[binary]>=3.1,<4.0",
+    "boto3>=1.34,<2.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +20,11 @@ dev = [
     "httpx>=0.27,<1.0",
     "ruff>=0.5,<1.0",
     "pre-commit>=3.7,<5.0",
+    # Mocks S3 in-process so storage tests need no running container or AWS
+    # credentials (mirrors how DB-backed tests self-skip).
+    "moto[s3]>=5.0,<6.0",
+    # Used by signing tests to fetch a presigned URL end-to-end.
+    "requests>=2.31,<3.0",
 ]
 
 [build-system]
@@ -39,3 +45,6 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "s3_real: opt-in tests that run against real AWS S3 (skipped unless real-S3 env vars are set)",
+]

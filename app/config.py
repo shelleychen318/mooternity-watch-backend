@@ -54,8 +54,12 @@ class Settings(BaseSettings):
         default="http://localhost:9000",
         description="Override for S3-compatible stores (local dev); None for real AWS S3.",
     )
-    s3_region: str = "us-east-1"
+    s3_region: str = "us-east-2"
     s3_bucket: str = "moo-snapshots"
+    # Key prefix all snapshot objects live under. References outside the
+    # configured bucket + this prefix are rejected (the trust boundary for
+    # edge-uploaded snapshot URLs). Empty string allows the whole bucket.
+    s3_snapshot_prefix: str = "snapshots/"
     s3_access_key_id: str | None = Field(default="minioadmin")
     s3_secret_access_key: str | None = Field(default="minioadmin")
     signed_url_ttl_seconds: int = Field(default=300, ge=1)
@@ -92,10 +96,16 @@ class Settings(BaseSettings):
         missing: list[str] = []
         if self.auth_secret == "dev-insecure-change-me":
             missing.append("MW_AUTH_SECRET (must be set to a real secret)")
-        if not self.s3_access_key_id:
-            missing.append("MW_S3_ACCESS_KEY_ID")
-        if not self.s3_secret_access_key:
-            missing.append("MW_S3_SECRET_ACCESS_KEY")
+        # S3 access keys are only required when talking to a custom S3-compatible
+        # endpoint (e.g. a self-hosted store), which needs explicit credentials.
+        # Against real AWS S3 (no endpoint override) the backend authenticates via
+        # its attached task role (ECS Fargate), so static keys must NOT be set --
+        # requiring them here would break a correct key-less prod deploy.
+        if self.s3_endpoint_url:
+            if not self.s3_access_key_id:
+                missing.append("MW_S3_ACCESS_KEY_ID")
+            if not self.s3_secret_access_key:
+                missing.append("MW_S3_SECRET_ACCESS_KEY")
 
         if missing:
             raise ValueError(

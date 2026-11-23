@@ -58,8 +58,11 @@ commit → push → draft title + description → **gate 2: approve the PR body*
 - `git push -u origin <branch>` (first push) or `git push`.
 
 ### 7. Draft the PR title + description
-- **Title:** sentence case, concise, no milestone IDs. (e.g. "Event payload
-  contract (versioned schema, validation + classification)".)
+- **Title:** prefix with the branch type, then a sentence-case summary:
+  `<type>: <summary>`, where `<type>` matches the branch pattern (`feat`, `fix`,
+  `docs`, `chore`). Concise, no milestone IDs. (e.g.
+  `docs: remove milestone/task ID references from source and config`, or
+  `feat: event payload contract with versioned schema and classification`.)
 - **Description:** use these sections, omitting any that don't apply:
   `## Summary`, `## What's added`, `## Notable design points`, `## Testing`,
   `## How to verify`. Keep prose focused on behavior; no milestone IDs in the
