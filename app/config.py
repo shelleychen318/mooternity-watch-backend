@@ -1,9 +1,9 @@
 """Centralized, environment-driven configuration.
 
-Settings load from environment variables (and an optional ``.env`` file for local
-dev). Values have sane local defaults where it is safe to do so; genuine secrets
-have no default and fail fast with a clear error when missing in non-local
-environments.
+Settings load from environment variables and an optional ``.env`` file. Defaults
+exist only where safe everywhere; environment-specific values (S3 endpoint and
+keys) default to ``None`` and secrets have no usable default, so they fail fast
+when missing outside local.
 """
 
 from __future__ import annotations
@@ -50,8 +50,10 @@ class Settings(BaseSettings):
     )
 
     # --- Object storage (S3 / MinIO) ---------------------------------------
+    # Endpoint and keys default to None (real AWS, task-role creds). Local dev
+    # sets the MinIO values via .env so they never leak into a real deploy.
     s3_endpoint_url: str | None = Field(
-        default="http://localhost:9000",
+        default=None,
         description="Override for S3-compatible stores (local dev); None for real AWS S3.",
     )
     s3_region: str = "us-east-2"
@@ -60,8 +62,8 @@ class Settings(BaseSettings):
     # configured bucket + this prefix are rejected (the trust boundary for
     # edge-uploaded snapshot URLs). Empty string allows the whole bucket.
     s3_snapshot_prefix: str = "snapshots/"
-    s3_access_key_id: str | None = Field(default="minioadmin")
-    s3_secret_access_key: str | None = Field(default="minioadmin")
+    s3_access_key_id: str | None = Field(default=None)
+    s3_secret_access_key: str | None = Field(default=None)
     signed_url_ttl_seconds: int = Field(default=300, ge=1)
 
     # --- Retention ----------------------------------------------------------
@@ -96,11 +98,8 @@ class Settings(BaseSettings):
         missing: list[str] = []
         if self.auth_secret == "dev-insecure-change-me":
             missing.append("MW_AUTH_SECRET (must be set to a real secret)")
-        # S3 access keys are only required when talking to a custom S3-compatible
-        # endpoint (e.g. a self-hosted store), which needs explicit credentials.
-        # Against real AWS S3 (no endpoint override) the backend authenticates via
-        # its attached task role (ECS Fargate), so static keys must NOT be set --
-        # requiring them here would break a correct key-less prod deploy.
+        # Keys are required only for a custom endpoint. Against real AWS (no
+        # endpoint) boto3 uses the task role, so static keys must stay unset.
         if self.s3_endpoint_url:
             if not self.s3_access_key_id:
                 missing.append("MW_S3_ACCESS_KEY_ID")

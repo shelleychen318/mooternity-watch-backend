@@ -60,3 +60,19 @@ def test_production_custom_endpoint_still_requires_s3_keys():
             s3_secret_access_key=None,
         )
     assert "MW_S3_ACCESS_KEY_ID" in str(exc.value)
+
+
+def test_s3_has_no_code_defaults(monkeypatch):
+    """S3 endpoint and keys have no code defaults; unset, they load as None (real-AWS
+    task-role path). The MinIO values live only in .env, so they cannot leak into a
+    deploy. _env_file=None + delenv mimic the Fargate task (no .env, vars unset)."""
+    for var in ("MW_S3_ENDPOINT_URL", "MW_S3_ACCESS_KEY_ID", "MW_S3_SECRET_ACCESS_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    s = Settings(
+        environment=Environment.STAGING,
+        auth_secret="a-real-secret",
+        _env_file=None,
+    )
+    assert s.s3_endpoint_url is None
+    assert s.s3_access_key_id is None
+    assert s.s3_secret_access_key is None
