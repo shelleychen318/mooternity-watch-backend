@@ -74,27 +74,54 @@ Or run the full stack (API + Postgres + object store) in containers:
 docker compose up --build
 ```
 
-### Lint, format, test
+### Lint & format
 
 ```bash
 ruff check .
 ruff format --check .
-pytest                  # full suite
-pytest tests/models     # just the data-model tests
 ```
 
-The test suite uses a **separate database** (`mooternity_test`) so running tests
-never touches your dev/app database — the suite creates and drops its own schema.
-The compose stack creates `mooternity_test` automatically on first startup; point
-the suite at it with `MW_TEST_DATABASE_URL`:
+## Testing
+
+Run everything in the project virtualenv (`.venv/bin/pytest`, or activate it
+first with `source .venv/bin/activate`) so the suite uses the interpreter that
+has the dev dependencies installed.
+
+### 1. Bring up the test database
+
+The suite uses a **separate database** (`mooternity_test`) so running tests never
+touches your dev/app database — it creates and drops its own schema. The compose
+stack creates `mooternity_test` automatically on first startup:
 
 ```bash
+docker compose up -d db
 export MW_TEST_DATABASE_URL="postgresql+psycopg://moo:moo@localhost:5433/mooternity_test"
-pytest
 ```
 
-Database-backed tests skip automatically when the test database is unreachable,
-so the suite stays green in CI without a database.
+Database-backed tests **skip** automatically when the test database is
+unreachable, so the suite still passes in CI without a database (it just covers
+less). Bring the database up to exercise the DB-backed tests.
+
+### 2. Run the suite
+
+```bash
+.venv/bin/pytest                 # full suite
+.venv/bin/pytest tests/models    # data-model tests
+.venv/bin/pytest tests/api       # ingestion API (device auth + upload URL)
+.venv/bin/pytest tests/storage   # storage layer (S3 references, signing)
+```
+
+### 3. Real-AWS tests (opt-in)
+
+A small tier (`s3_real`-marked) runs against real S3 to cover behavior the
+in-process mock can't — presigned-URL expiry and real uploads/deletes. It is
+**skipped unless** `MW_S3_REAL_TEST=1`, and needs AWS credentials in your
+environment (it provisions and tears down a throwaway `moo-snapshots-citest-*`
+bucket, never the real snapshot bucket):
+
+```bash
+MW_S3_REAL_TEST=1 .venv/bin/pytest tests/storage/test_s3_real.py
+```
 
 ## Data model
 

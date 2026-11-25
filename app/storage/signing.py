@@ -1,7 +1,8 @@
-"""Short-lived presigned URLs for reading snapshot objects.
+"""Short-lived presigned URLs for reading and writing snapshot objects.
 
-A presigned ``GET`` URL expires after a configurable TTL. The reference is
-validated against the configured bucket and prefix before signing.
+Both the ``GET`` (read) and ``PUT`` (upload) URLs expire after a configurable
+TTL, and the key is validated against the configured bucket + prefix before
+signing — so a device can only ever write under the allowed snapshot prefix.
 """
 
 from __future__ import annotations
@@ -56,6 +57,33 @@ def generate_signed_url(
 
     url = client.generate_presigned_url(
         "get_object",
+        Params={"Bucket": reference.bucket, "Key": reference.key},
+        ExpiresIn=effective_ttl,
+    )
+    return SignedUrl(url=url, ttl_seconds=effective_ttl)
+
+
+def generate_presigned_put_url(
+    ref: str,
+    *,
+    ttl: int | None = None,
+    settings: Settings | None = None,
+    client: S3Client | None = None,
+) -> SignedUrl:
+    """Issue a short-lived presigned PUT URL for a server-chosen snapshot key.
+
+    The key is validated against the configured bucket + prefix before signing;
+    a foreign-bucket or out-of-prefix key raises ``ReferenceError``. ``ttl``
+    defaults to ``settings.signed_url_ttl_seconds``.
+    """
+    settings = settings or get_settings()
+    reference = validate_reference(ref, settings=settings)
+    client = client or get_s3_client()
+
+    effective_ttl = ttl if ttl is not None else settings.signed_url_ttl_seconds
+
+    url = client.generate_presigned_url(
+        "put_object",
         Params={"Bucket": reference.bucket, "Key": reference.key},
         ExpiresIn=effective_ttl,
     )

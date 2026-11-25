@@ -175,6 +175,55 @@ aws ecs run-task \
 - Watch the task reach `STOPPED` with container `exitCode 0`, and read its log
   stream in the service's CloudWatch log group.
 
+## Seeding a device credential
+
+Edge devices authenticate to the ingestion API with a per-device bearer
+credential (see [snapshot-upload-contract.md](snapshot-upload-contract.md)).
+There is no self-service registration path, so an operator seeds a device with
+`scripts/seed_device.py`, which inserts a `devices` row with a freshly generated,
+high-entropy key and prints that key **once**.
+
+Because RDS is private, run the seeder the same way as migrations: as a one-off
+Fargate task on the deployed image, with the container command overridden. The
+task definition already injects `MW_DATABASE_URL`, so the script connects to RDS
+with no extra configuration.
+
+> **Prerequisites.** RDS must be **up** with migrations applied (the `farms` and
+> `devices` tables must exist). Seed against a deployed image, not a stale one —
+> the same image ships the ingestion endpoints firmware needs, so deploy first,
+> then seed.
+
+```bash
+# Create a new farm and a device under it (prints the key to the task's logs):
+aws ecs run-task \
+  --cluster default \
+  --task-definition <current-task-def> \
+  --launch-type FARGATE \
+  --count 1 \
+  --network-configuration 'awsvpcConfiguration={subnets=[<task-subnet>],securityGroups=[<task-sg>],assignPublicIp=ENABLED}' \
+  --overrides '{"containerOverrides":[{"name":"Main","command":["python","-m","scripts.seed_device","--farm-name","Firmware Test Farm"]}]}' \
+  --region us-east-2
+```
+
+- Container name is **`Main`** (same as migrations); the override must target it.
+- To attach a device to an **existing** farm instead, swap the command to
+  `["python","-m","scripts.seed_device","--farm-id","<farm-uuid>"]`.
+- The generated `device_key` is written to **stdout**, which lands in the task's
+  **CloudWatch log stream** (the service's log group). Watch the task reach
+  `STOPPED` with `exitCode 0`, open its log stream, and copy the key from the
+  `device key:` line.
+- Hand firmware the copied key plus
+  [snapshot-upload-contract.md](snapshot-upload-contract.md). They send it as
+  `Authorization: Bearer <device_key>` against the Express
+  `…​.ecs.us-east-2.on.aws` host.
+
+Locally (against the compose Postgres, not RDS) the same script runs directly:
+
+```bash
+export MW_DATABASE_URL="postgresql+psycopg://moo:moo@localhost:5433/mooternity"
+python -m scripts.seed_device --farm-name "Local Test Farm"
+```
+
 ## ECS Express Mode — things to know
 
 Express is the "hand it an image, it wires the rest" experience. A few behaviors

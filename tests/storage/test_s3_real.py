@@ -22,7 +22,7 @@ import time
 import pytest
 import requests
 
-from app.storage.signing import generate_signed_url
+from app.storage.signing import generate_presigned_put_url, generate_signed_url
 from tests.storage.conftest import S3RealHarness
 
 pytestmark = pytest.mark.s3_real
@@ -83,3 +83,19 @@ def test_delete_takes_effect_on_real_s3(s3_real: S3RealHarness) -> None:
 
     listing = s3_real.client.list_objects_v2(Bucket=s3_real.bucket, Prefix=key)
     assert listing.get("KeyCount", 0) == 0
+
+
+def test_presigned_put_round_trips_on_real_s3(s3_real: S3RealHarness) -> None:
+    """A presigned PUT accepts a credential-less upload against real S3."""
+    key = "snapshots/real-upload.jpg"
+
+    signed = generate_presigned_put_url(
+        key,
+        settings=s3_real.settings,
+        client=s3_real.client,
+    )
+    put = requests.put(signed.url, data=b"snapshot-bytes", timeout=10)
+    assert put.status_code == 200
+
+    stored = s3_real.client.get_object(Bucket=s3_real.bucket, Key=key)
+    assert stored["Body"].read() == b"snapshot-bytes"
