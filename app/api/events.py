@@ -62,12 +62,18 @@ def create_event(
     try:
         session.commit()
     except IntegrityError:
-        # Unique violation on ``event_id`` — a retried push. Roll back and
-        # return the originally-stored row so retries are a no-op success.
+        # The expected cause is the ``event_id`` unique constraint — a retried
+        # push. Roll back and return the originally-stored row so the retry is a
+        # no-op success. Any other integrity failure (or a same-id row that is
+        # not this device's event) is not the dedupe case and is re-raised.
         session.rollback()
-        existing = session.scalar(select(Event).where(Event.event_id == payload.event_id))
+        existing = session.scalar(
+            select(Event).where(
+                Event.event_id == payload.event_id,
+                Event.device_id == device.id,
+            )
+        )
         if existing is None:
-            # The violation was not the expected dedupe case; surface it.
             raise
         return CreateEventResponse(
             event_id=existing.event_id,

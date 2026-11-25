@@ -9,8 +9,10 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Event
@@ -199,3 +201,34 @@ def test_out_of_order_events_persist_and_sort_by_receive_time(
         select(Event).where(Event.device_id == device.id).order_by(Event.received_timestamp)
     ).all()
     assert [e.event_id for e in ordered] == ["evt_late_clock", "evt_early_clock"]
+
+
+def test_non_dedupe_integrity_error_is_surfaced(
+    client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An IntegrityError that is not an ``event_id`` retry must not be swallowed.
+
+    The handler only treats a commit failure as a no-op dedupe when the stored
+    row is this device's same-id event. A violation with no such row (e.g. a
+    different integrity cause) must propagate, not masquerade as a 201.
+    """
+    make_device(db_session, device_key=VALID_KEY)
+    payload = _make_event_payload()
+
+    real_commit = db_session.commit
+
+    def _commit_raises_on_event() -> None:
+        # Only sabotage the handler's event insert, not device-auth's
+        # ``last_seen_at`` commit which runs first on the same session.
+        if any(isinstance(obj, Event) for obj in db_session.new):
+            raise IntegrityError("forced", params=None, orig=Exception("boom"))
+        real_commit()
+
+    monkeypatch.setattr(db_session, "commit", _commit_raises_on_event)
+
+    with pytest.raises(IntegrityError):
+        _post(client, payload)
+
+    # Nothing persisted: the error surfaced instead of returning a bogus row.
+    monkeypatch.undo()
+    assert _count_events(db_session, payload["event_id"]) == 0
