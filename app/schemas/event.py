@@ -54,8 +54,6 @@ class EventPayload(BaseModel):
 
     event_id: str
     schema_version: str
-    device_id: str
-    farm_id: str
     event_type: EventType
     event_timestamp: datetime.datetime
     # Null on the wire; stamped server-side on ingestion.
