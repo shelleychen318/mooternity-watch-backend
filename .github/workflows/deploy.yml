@@ -1,0 +1,64 @@
+name: Deploy to ECS
+
+# Manually triggered deploy of the backend to the ECS Express service. It builds
+# the container image, pushes it to ECR, and rolls the running service onto the
+# new image with a forced new deployment.
+
+on:
+  workflow_dispatch: {}
+
+# Least privilege: id-token to fetch the OIDC token, read to checkout.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REPOSITORY: moo-backend
+  ECS_CLUSTER: default
+  ECS_SERVICE: moo-backend-9479
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY"
+          # Build for linux/amd64 to match the Fargate X86_64 runtime (an arm64
+          # image exec-format crash-loops). Tag both the commit SHA (traceable)
+          # and :latest (what the Express task definition pulls).
+          docker build --platform linux/amd64 \
+            -t "$IMAGE:${GITHUB_SHA}" \
+            -t "$IMAGE:latest" .
+          docker push "$IMAGE:${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
+
+      - name: Roll the service onto the new image
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
+
+      - name: Wait for the service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --region "$AWS_REGION"

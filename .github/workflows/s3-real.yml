@@ -6,7 +6,7 @@ name: S3 real tier
 #
 # Auth is via GitHub OIDC: the job assumes the moo-s3-citest IAM role (scoped to
 # moo-snapshots-citest-* buckets only) with no long-lived keys. The role ARN is
-# stored in the AWS_S3_CITEST_ROLE_ARN repository secret. Setup: scratch/aws-setup.md.
+# stored in the AWS_S3_CITEST_ROLE_ARN repository secret.
 
 on:
   workflow_dispatch: {}

@@ -74,11 +74,17 @@ CI (`.github/workflows/ci.yml`) runs exactly: `ruff check` → `ruff format
 - Type-hint everything; modern syntax (`X | None`, `list[...]`).
 - Ruff is the single linter/formatter (line length 100; rules `E,F,I,UP,B`).
   Let it fix/format; don't hand-format.
-- **No internal planning references in code.** Docstrings and comments must not
-  cite milestone/task IDs (e.g. `M3-T1`, `Task 4`), planning docs (e.g.
+- **No internal planning references in code, commits, branches, or PRs.**
+  Docstrings, comments, commit messages, branch names, and PR titles/bodies must
+  not cite milestone/task IDs (e.g. `M3-T1`, `Task 4`, `m4`), planning docs (e.g.
   `scratch/*-plan.md`), testing-tier names, or future/not-yet-built work. These
-  mean nothing to a reader of the code. Describe what the code does and why,
+  mean nothing to anyone outside the plan. Describe what the change does and why,
   using durable domain terms — not where it sits in the plan or what comes next.
+- **No `scratch/` references in committed files.** `scratch/` is gitignored, so
+  anything committed (code, `.env.example`, CI workflows, committed docs) must
+  not point into it — such a link dangles for anyone who clones the repo. Keep
+  `scratch/` cross-references inside `scratch/` only. If a committed file needs
+  the information, inline a durable summary of it instead of linking.
 - **Docstrings describe behavior, not the code's qualities.** State what a
   module/function does and why; skip self-praise or meta-commentary about the
   implementation (e.g. "backend-agnostic", "no store-specific branches",
