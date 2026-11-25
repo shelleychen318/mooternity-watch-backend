@@ -131,6 +131,14 @@ Mac defaults to arm64, which crash-loops with an exec-format error).
 > activating advanced AWS features (a project-owner billing decision in AWS
 > Settings), not a repo change.
 
+> **`--force-new-deployment` alone does NOT pick up a new image.** The
+> Express-generated task definition pins the container image by **digest**
+> (`moo-backend@sha256:…`), not by the `latest` **tag**. Pushing a new `latest`
+> leaves the task def pointing at the old digest, and `--force-new-deployment`
+> just restarts tasks on that same task def — so the service keeps running the
+> old image. To actually ship a new image you must register a **new task-def
+> revision** at the new digest and point the service at it (steps 3–4 below).
+
 ```bash
 # 1. Authenticate Docker to ECR
 aws ecr get-login-password --region us-east-2 \
@@ -142,20 +150,93 @@ docker build --platform linux/amd64 -t moo-backend:latest .
 docker tag moo-backend:latest <ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/moo-backend:latest
 docker push <ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/moo-backend:latest
 
-# 3. Roll the service onto the new image
+# 3. Resolve the digest the new 'latest' now points to
+NEW_DIGEST=$(aws ecr describe-images --repository-name moo-backend \
+  --image-ids imageTag=latest --region us-east-2 \
+  --query 'imageDetails[0].imageDigest' --output text)
+
+# 4. Register a new task-def revision with that image, then roll the service onto it.
+#    Clone the current task def, swap only the image, drop read-only fields:
+CUR=$(aws ecs describe-services --cluster default --services moo-backend-9479 \
+  --region us-east-2 \
+  --query "services[0].deployments[?status=='PRIMARY'].taskDefinition | [0]" --output text)
+aws ecs describe-task-definition --task-definition "$CUR" --region us-east-2 \
+  --query 'taskDefinition' --output json > /tmp/td.json
+NEW_IMAGE="<ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/moo-backend@${NEW_DIGEST}" \
+python3 -c '
+import json, os
+td = json.load(open("/tmp/td.json"))
+for c in td["containerDefinitions"]:
+    if c["name"] == "Main":
+        c["image"] = os.environ["NEW_IMAGE"]
+for k in ("taskDefinitionArn","revision","status","requiresAttributes",
+          "compatibilities","registeredAt","registeredBy","deregisteredAt"):
+    td.pop(k, None)
+json.dump(td, open("/tmp/td_new.json","w"))
+'
+NEW_TD=$(aws ecs register-task-definition --cli-input-json file:///tmp/td_new.json \
+  --region us-east-2 --query 'taskDefinition.family' --output text):$(
+  aws ecs register-task-definition --cli-input-json file:///tmp/td_new.json \
+  --region us-east-2 --query 'taskDefinition.revision' --output text)
 aws ecs update-service --cluster default --service moo-backend-9479 \
-  --force-new-deployment --region us-east-2
+  --task-definition "$NEW_TD" --region us-east-2
+```
+
+Verify the rollout picked up the new image — the running task's digest should
+match the `latest` digest from step 3, not the previous one:
+
+```bash
+aws ecs describe-tasks --cluster default \
+  --tasks "$(aws ecs list-tasks --cluster default --service-name moo-backend-9479 \
+    --region us-east-2 --query 'taskArns' --output text)" \
+  --region us-east-2 --query 'tasks[*].{status:lastStatus,digest:containers[0].imageDigest}'
 ```
 
 Verify the image architecture locally if a task crash-loops:
 `docker image inspect moo-backend:latest --format '{{.Architecture}}'` → `amd64`.
+
+## One-off tasks: resolving the task-def, subnet, and security group
+
+The migration and device-seeding commands below both run as one-off Fargate tasks
+and share three values you must fill in — `<current-task-def>`, `<task-subnet>`,
+and `<task-sg>`. These are **placeholders**: passing them literally fails with
+`InvalidParameterException: Subnet ID must match subnet-[0-9a-f]+`. Resolve them
+from the running service first so the one-off task lands in the same network the
+RDS security group already allows.
+
+For an Express-managed service these values live on the **`PRIMARY` deployment**,
+not at the service's top level — `services[0].taskDefinition` and
+`services[0].networkConfiguration` are `null`, so query the deployment:
+
+```bash
+# Subnet(s) and security group(s) the service runs in:
+aws ecs describe-services \
+  --cluster default --services moo-backend-9479 --region us-east-2 \
+  --query "services[0].deployments[?status=='PRIMARY'].networkConfiguration.awsvpcConfiguration.{subnets:subnets,securityGroups:securityGroups}" \
+  --output json
+
+# The task definition the service currently runs (family:revision):
+aws ecs describe-services \
+  --cluster default --services moo-backend-9479 --region us-east-2 \
+  --query "services[0].deployments[?status=='PRIMARY'].taskDefinition | [0]" \
+  --output text
+```
+
+- Substitute the real `subnet-…` / `sg-…` / `family:revision` values into the
+  commands below — no angle brackets should remain.
+- The service typically runs in **multiple subnets**; pass one, or list them
+  comma-separated: `subnets=[subnet-aaa,subnet-bbb]`.
+- Keep `assignPublicIp=ENABLED`: the task pulls its image from ECR over the
+  internet (there are no VPC endpoints), so without a public IP or a NAT gateway
+  the pull fails.
 
 ## Running database migrations
 
 The RDS instance is **private** (no public access), so migrations don't run from a
 laptop — they run from inside the VPC on the same image, with the container command
 overridden. This uses the same task definition (which already injects
-`MW_DATABASE_URL`), the task's subnet, and the task's security group.
+`MW_DATABASE_URL`), the task's subnet, and the task's security group (resolve all
+three per "One-off tasks" above).
 
 ```bash
 aws ecs run-task \
@@ -186,7 +267,8 @@ high-entropy key and prints that key **once**.
 Because RDS is private, run the seeder the same way as migrations: as a one-off
 Fargate task on the deployed image, with the container command overridden. The
 task definition already injects `MW_DATABASE_URL`, so the script connects to RDS
-with no extra configuration.
+with no extra configuration. Resolve `<current-task-def>`, `<task-subnet>`, and
+`<task-sg>` per "One-off tasks" above.
 
 > **Prerequisites.** RDS must be **up** with migrations applied (the `farms` and
 > `devices` tables must exist). Seed against a deployed image, not a stale one —
