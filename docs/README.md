@@ -8,6 +8,7 @@ the deeper reference material you consult for a specific task.
 |---|---|
 | [data-model.md](data-model.md) | The PostgreSQL schema: entities, conventions, and how it maps to `app/models/`. |
 | [deployment.md](deployment.md) | How the backend runs on AWS (ECS Fargate), plus deploy, migrate, and start/stop operations. |
+| [snapshot-upload-contract.md](snapshot-upload-contract.md) | How an edge device authenticates and uploads a snapshot via a presigned upload URL. |
 
 Related docs elsewhere in the repo:
 

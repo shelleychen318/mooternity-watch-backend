@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from app import __version__
+from app.api import snapshots
 from app.config import get_settings
 from app.db import check_connection
 
@@ -15,6 +16,8 @@ def create_app() -> FastAPI:
         title="Moo-ternity Watch Backend",
         version=__version__,
     )
+
+    app.include_router(snapshots.router)
 
     @app.get("/health")
     def health() -> dict[str, object]:

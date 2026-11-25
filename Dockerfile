@@ -11,10 +11,11 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN pip install --upgrade pip && pip install .
 
-# Copy application source and migration tooling.
+# Copy application source, migration tooling, and operational scripts.
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
+COPY scripts ./scripts
 
 EXPOSE 8000
 
