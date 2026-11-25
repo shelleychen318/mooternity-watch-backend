@@ -112,16 +112,24 @@ curl -sk https://<express-host>.ecs.us-east-2.on.aws/health
 
 ## Redeploying a new image
 
-The usual path is the **`deploy.yml`** GitHub Actions workflow (Actions → *Deploy
-to ECS* → Run workflow). It builds for `linux/amd64`, pushes to ECR, and rolls the
-service with `--force-new-deployment` — the same steps as the manual flow below,
-via the `moo-deploy` OIDC role (no static keys). Keep RDS running during the deploy
-so the health check reports `database: ok`.
+Redeploy **by hand** with an AWS identity that belongs to this account's
+organization (the `moo-admin` CLI profile). Keep RDS running during the deploy so
+the health check reports `database: ok`. The container is single-platform, so
+build for **linux/amd64** to match the Fargate `X86_64` runtime (an Apple-silicon
+Mac defaults to arm64, which crash-loops with an exec-format error).
 
-To redeploy **by hand** (first-time setup, or if the workflow is unavailable):
-the container is single-platform, so build for **linux/amd64** to match the
-Fargate `X86_64` runtime (an Apple-silicon Mac defaults to arm64, which crash-loops
-with an exec-format error).
+> **The GitHub Actions deploy (`deploy.yml`) does not work on this account.** It
+> authenticates with GitHub OIDC, which assumes a role via a principal *outside*
+> this AWS organization. The account's managed resource control policy denies
+> `sts:*` (and `ecr:*`, `s3:*`, `secretsmanager:*`, ...) to any non-service
+> principal whose `aws:PrincipalOrgID` is not this org, so every GitHub OIDC
+> `AssumeRoleWithWebIdentity` is denied with "Not authorized to perform
+> sts:AssumeRoleWithWebIdentity" — regardless of the role's trust policy. This is
+> a guardrail of the free sign-up experience and can't be edited. The `moo-deploy`
+> role and `deploy.yml` are kept in place but dormant; a manual deploy from an
+> in-org identity (below) is the working path. Lifting this would require
+> activating advanced AWS features (a project-owner billing decision in AWS
+> Settings), not a repo change.
 
 ```bash
 # 1. Authenticate Docker to ECR

@@ -7,13 +7,14 @@ name: S3 real tier
 # Auth is via GitHub OIDC: the job assumes the moo-s3-citest IAM role (scoped to
 # moo-snapshots-citest-* buckets only) with no long-lived keys. The role ARN is
 # stored in the AWS_S3_CITEST_ROLE_ARN repository secret.
+#
+# Manual-trigger only. On the current AWS account the OIDC assume is denied by a
+# managed resource control policy (out-of-org federated principals cannot call
+# sts:AssumeRoleWithWebIdentity), so this workflow does not run here; run the tier
+# locally with `pytest -m s3_real` using in-org credentials. See docs/deployment.md.
 
 on:
   workflow_dispatch: {}
-  schedule:
-    # Weekly, Mondays at 08:00 UTC. Catches external drift (AWS/boto3/IAM changes)
-    # between releases; a solo capstone doesn't need a nightly cadence.
-    - cron: "0 8 * * 1"
 
 # Least privilege: id-token to fetch the OIDC token, read to checkout.
 permissions:
