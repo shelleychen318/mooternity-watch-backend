@@ -59,3 +59,4 @@ def get_current_device(
 
 
 CurrentDevice = Annotated[Device, Depends(get_current_device)]
+DbSession = Annotated[Session, Depends(get_session)]

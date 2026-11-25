@@ -12,8 +12,6 @@ from app.schemas import BoundingBox, Detection, EventPayload, EventType, Snapsho
 DESIGN_EXAMPLE_PAYLOAD = {
     "event_id": "evt_01HTX9P5N8K2J7QF3R4W6YABCD",
     "schema_version": "1.0",
-    "device_id": "dev_barn01_pi5",
-    "farm_id": "farm_demo_001",
     "event_type": "calving_detected",
     "event_timestamp": "2026-02-14T03:21:47.123Z",
     "received_timestamp": None,
@@ -87,8 +85,6 @@ def test_minimal_payload_defaults_optional_fields():
     payload = {
         "event_id": "evt_minimal",
         "schema_version": "1.0",
-        "device_id": "dev_barn01_pi5",
-        "farm_id": "farm_demo_001",
         "event_type": "cow_detected",
         "event_timestamp": "2026-02-14T03:21:47.123Z",
     }

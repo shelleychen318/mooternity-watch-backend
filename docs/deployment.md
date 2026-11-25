@@ -259,7 +259,7 @@ aws ecs run-task \
 ## Seeding a device credential
 
 Edge devices authenticate to the ingestion API with a per-device bearer
-credential (see [snapshot-upload-contract.md](snapshot-upload-contract.md)).
+credential (see [device-integration-contract.md](device-integration-contract.md)).
 There is no self-service registration path, so an operator seeds a device with
 `scripts/seed_device.py`, which inserts a `devices` row with a freshly generated,
 high-entropy key and prints that key **once**.
@@ -295,7 +295,7 @@ aws ecs run-task \
   `STOPPED` with `exitCode 0`, open its log stream, and copy the key from the
   `device key:` line.
 - Hand firmware the copied key plus
-  [snapshot-upload-contract.md](snapshot-upload-contract.md). They send it as
+  [device-integration-contract.md](device-integration-contract.md). They send it as
   `Authorization: Bearer <device_key>` against the Express
   `…​.ecs.us-east-2.on.aws` host.
 
