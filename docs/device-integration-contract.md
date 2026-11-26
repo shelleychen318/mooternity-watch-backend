@@ -43,13 +43,6 @@ Authorization: Bearer <device_key>
 - Send it only over HTTPS. Never place it in a URL or query string.
 - A missing, malformed, or unknown credential returns **401**.
 
-**The credential is the device's whole identity.** The backend resolves the farm
-and device from the authenticated `device_key`: it derives the snapshot's storage
-location from the device's farm, and records the farm and device on every stored
-event. The device does not send its farm or device id, and anything of that sort
-in an event body is ignored — a device can only ever write under its own farm and
-record events as itself.
-
 ---
 
 # Snapshot upload
@@ -278,12 +271,7 @@ curl -s -X POST "$HOST/v1/events" \
 
 ## Verifying your integration
 
-There are three ways to confirm a push worked, from the quickest to the most
-authoritative. The request body itself is **not** written to any log — the
-database is the system of record — so "did it store?" is answered by the API
-response or by the stored row, not by searching logs for the payload.
-
-### 1. The API response (primary check — no AWS access needed)
+### 1. The API response (primary check)
 
 Everything a device needs to confirm success is in the responses, so this is the
 day-to-day integration check:
@@ -301,8 +289,7 @@ day-to-day integration check:
 The app runs under uvicorn, whose access log writes one line per request (e.g.
 `POST /v1/events 201`) to the ECS task's CloudWatch log group
 (`/aws/ecs/default/…`). This confirms the request arrived at the container and
-which status it returned. It does **not** include the payload body — use it for
-"did my request get there and what did it return," not for inspecting content.
+which status it returned.
 
 ### 3. RDS — confirm the row exists (authoritative)
 
