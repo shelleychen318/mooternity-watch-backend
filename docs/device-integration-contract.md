@@ -43,11 +43,6 @@ Authorization: Bearer <device_key>
 - Send it only over HTTPS. Never place it in a URL or query string.
 - A missing, malformed, or unknown credential returns **401**.
 
-**The credential is the device's whole identity.** The backend resolves the farm
-and device from the authenticated `device_key`: it derives the snapshot's storage
-location from the device's farm, and records the farm and device on every stored
-event.
-
 ---
 
 # Snapshot upload
